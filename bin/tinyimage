@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+require 'tinify'
+require 'highline'
+
+def command?(name)
+  `which #{name}`
+  $?.success?
+end
+
+abort("Please install 'pngpaste' via homebrew!") unless command? 'pngpaste'
+abort("Please set TINIFY_API_KEY in your environment. Get yours at: https://tinypng.com/developers") unless ENV['TINIFY_API_KEY']
+
+Tinify.key = ENV['TINIFY_API_KEY']
+
+cli = HighLine.new
+
+clipboard_ready = cli.ask("Hit enter to confirm you have an image ready to compress in the clipboard (or cntrl-C to abort)") { |q| q.default = true }
+
+if clipboard_ready
+  image_data = `pngpaste - 2>/dev/null`
+
+  abort("No image found on the clipboard to compress") unless $?.success?
+
+  source = Tinify.from_buffer(image_data)
+
+  output_filename = cli.ask("Where would you like to save the optimized file?") { |q| q.default = "./optimized.png" }
+
+  source.to_file(output_filename)
+end
+
